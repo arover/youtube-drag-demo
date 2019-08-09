@@ -1,0 +1,7 @@
+<resources>
+    <dimen name="float_window_bottom_margin">48dp</dimen>
+    <dimen name="mini_height">90dp</dimen>
+    <dimen name="mini_width">160dp</dimen>
+    <dimen name="mini_phase2_height">140dp</dimen>
+    <dimen name="normal_height">220dp</dimen>
+</resources>

@@ -196,13 +196,6 @@ class MainActivity : AppCompatActivity() {
                 val ydis = event.rawY - phase2FingerY // windowBottom - bottomMargin - miniHeight
 
 //                Log.d(TAG, "phase3 ydis=$ydis, fy=$phase2FingerY, tdy=$touchDownY")
-                var factor = ydis / (phase2Height - miniHeight)
-                if(factor <= 1) {
-                    closeBtn.alpha = factor
-                    pauseBtn.alpha = factor
-                    val cleft = (floatWindow.right - factor * 60 - 150).toInt()
-                    closeBtn.layout(cleft , 30, cleft + 150, 180)
-                }
 
                 var phase3Right = (windowRight - (ydis / (phase2Height - miniHeight)) * (windowRight - miniWidth)).toInt()
                 var phase3Bottom = (phase2Height - ydis).toInt()

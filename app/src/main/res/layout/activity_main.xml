@@ -1,7 +1,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <Button
         android:id="@+id/mainContentBtn"
@@ -9,13 +10,28 @@
         android:layout_height="wrap_content"
         android:text="MainContent Button"
         android:textSize="64sp" />
+    <TextView
+        android:id="@+id/mainContentText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/mainContentBtn"
+        android:padding="10dp"
+        android:text="Some text"
+        android:textSize="20sp" />
+    <View
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/design_default_color_primary"/>
 
     <RelativeLayout
         android:id="@+id/floatWindow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:elevation="10dp">
 
+        android:elevation="10dp">
+<!--        tools:visibility="gone"-->
         <View
             android:id="@+id/videoView"
             android:layout_width="match_parent"
@@ -23,28 +39,24 @@
             android:background="@color/colorAccent" />
 
         <ImageButton
-            android:id="@+id/closeBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="10dp"
-            android:layout_marginTop="20dp"
-            android:visibility="gone"
-            tools:visibility="visible"
-            android:src="@drawable/ic_close_black_32dp"/>
-
-        <ImageButton
             android:id="@+id/pauseBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="30dp"
-            android:layout_toLeftOf="@+id/closeBtn"
-            android:layout_marginTop="20dp"
-            tools:visibility="visible"
-            android:visibility="gone"
+            android:layout_marginRight="-80dp"
+            android:layout_alignParentRight="true"
             android:gravity="center"
             android:src="@drawable/ic_pause_cyan_32dp"
             android:textSize="20sp" />
+
+        <ImageButton
+            android:id="@+id/closeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="-80dp"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/ic_close_black_32dp"/>
+
+
 
         <LinearLayout
             android:id="@+id/contentView"
@@ -63,22 +75,15 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textSize="30sp" />
+                android:text="texttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttexttext"
+                android:textSize="14sp" />
         </LinearLayout>
 
 
 
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/mainContentText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/mainContentBtn"
-        android:padding="10dp"
-        android:text="Some text"
-        android:textSize="20sp" />
+
 
 </RelativeLayout>
 

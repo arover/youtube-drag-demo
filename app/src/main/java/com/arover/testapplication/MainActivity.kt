@@ -179,14 +179,23 @@ class MainActivity : AppCompatActivity() {
 
 //            yDelta += (yDelta * 0.382 * yDelta / yDistance).toInt()
             val y2Distance = (windowBottom - bottomMargin - phase2Height - touchDownY) * 1.0f
+            var factor = 0F
             val phase2Bottom = if (top <= 0) {
                 normalHeight
             } else {
-                normalHeight - (top / y2Distance * (normalHeight - phase2Height)).toInt()
+                factor = top / y2Distance
+                normalHeight - (factor * (normalHeight - phase2Height)).toInt()
+
             }
             Log.d(TAG, "phase2 y2Distance=$y2Distance, phase2Bottom=$phase2Bottom")
             videoView.layout(0, 0, floatWindow.width, phase2Bottom)
             contentView.layout(0, phase2Bottom, floatWindow.width, floatWindow.bottom)
+
+            var alpha = 1 - factor
+            if(alpha < 0 ) {
+                alpha = 0F
+            }
+            contentView.alpha = alpha
         }
         // 滑动处于第二阶段，即top在阶段二和最终阶段的范围内，那么视频高度和宽度都随滑动距离变化
         if (top in miniPhase2Top..miniTop) {
@@ -210,8 +219,9 @@ class MainActivity : AppCompatActivity() {
                 contentView.layout(0, phase3Bottom, windowRight, floatWindow.bottom)
             }
         }
+
+        //小窗口状态时往上滑动
         if( style == STYLE_MINI && top > miniPhase2Top){
-            //往上滑时
             val ydis = event.rawY - touchDownRawY
             if(ydis > 0){ //往下滑不动
                 Log.d(TAG,"video r=${videoView.right}, b=${videoView.bottom}")

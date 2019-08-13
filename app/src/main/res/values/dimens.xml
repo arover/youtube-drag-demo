@@ -1,8 +1,9 @@
 <resources>
     <dimen name="float_window_bottom_margin">60dp</dimen>
-    <dimen name="mini_height">70dp</dimen>
-    <dimen name="mini_width">130dp</dimen>
+    <dimen name="mini_height">60dp</dimen>
+    <dimen name="mini_width">140dp</dimen>
     <dimen name="mini_side_margin">8dp</dimen>
     <dimen name="mini_phase2_height">120dp</dimen>
     <dimen name="normal_height">202dp</dimen>
+    <dimen name="float_window_reset_pos_thresold">30dp</dimen>
 </resources>

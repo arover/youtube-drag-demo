@@ -35,7 +35,7 @@
         <View
             android:id="@+id/videoView"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="@dimen/normal_height"
             android:background="@color/colorAccent" />
 
         <ImageButton

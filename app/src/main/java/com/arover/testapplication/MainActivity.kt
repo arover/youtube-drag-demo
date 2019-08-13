@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
     }
-
+    private var resetThresold: Int = 0
     private var phase3UpRight: Int = 0
     private var touchDownRawY: Int = 0
     private var floatWindowTop: Int = 0
@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         miniSideMargin = resources.getDimensionPixelSize(R.dimen.mini_side_margin)
         phase2Height = resources.getDimensionPixelSize(R.dimen.mini_phase2_height)
         normalHeight = resources.getDimensionPixelSize(R.dimen.normal_height)
+        resetThresold = resources.getDimensionPixelSize(R.dimen.float_window_reset_pos_thresold)
         //relative position
         miniTop = windowBottom - bottomMargin - miniHeight - statusBarHeight
         miniPhase2Top = windowBottom - bottomMargin - phase2Height- statusBarHeight
@@ -73,16 +74,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         initSizes()
-        contentView.setOnTouchListener { v, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                touchDownX = event.x.toInt()
-                touchDownY = event.x.toInt()
-                phase2FingerY = 0
-                Log.d(TAG, "contentView touchDownX=$touchDownX,touchDownY=$touchDownY")
-            }
-            false
-
-        }
+        // contentView.setOnTouchListener 
 
 
         videoView.setOnTouchListener(object : View.OnTouchListener {
@@ -94,10 +86,10 @@ class MainActivity : AppCompatActivity() {
                     touchDownRawY = event.rawY.toInt()
                     phase2FingerY = 0
                     floatWindowTop = floatWindow.top
-                    if(floatWindowTop != 0){
-                        style = STYLE_MINI
+                    style = if(floatWindowTop != 0){
+                        STYLE_MINI
                     } else {
-                        style = STYLE_PORTRAINT_FS
+                        STYLE_PORTRAINT_FS
                     }
                     Log.d(TAG, "ACTION_DOWN y=${event.y},rawY=$touchDownRawY, floatWindowTop=$floatWindowTop")
                     return true
@@ -106,12 +98,7 @@ class MainActivity : AppCompatActivity() {
                     return true
                 } else if (event.action == MotionEvent.ACTION_UP) {
                     v.performClick()
-                    phase2FingerY = 0
-                    if(floatWindow.top in miniTop+statusBarHeight-2..miniTop+statusBarHeight-2){
-                        style = STYLE_MINI
-                    } else {
-                        style = STYLE_PORTRAINT_FS
-                    }
+                    animateToState(floatWindow.top)
                     return true
                 } else {
                     return true
@@ -121,28 +108,134 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun showOtherView(event: MotionEvent) {
+    private fun animateToState(top: Int){
+        if(style == STYLE_PORTRAINT_FS && top == miniTop){
+            style = STYLE_MINI
+            phase2FingerY = 0
+            return
+        }
+        val fingerY = top + statusBarHeight
+        fingerUpY = fingerY
+        val destRawY = if(style == STYLE_MINI){
+            //迷你窗口往下消失
+            if(fingerY > miniTop + statusBarHeight){
+                Log.d(TAG,"fadeout down")
+                windowBottom + miniHeight
+            } else {
+                Log.d(TAG,"reposition to mini window position")
+                touchDownY
+            }
+        } else {
+            Log.d(TAG,"fling to mini ")
+            miniTop + touchDownRawY
+        }
 
+        val destTop = if((style == STYLE_PORTRAINT_FS && top < resetThresold)
+                                || (style == STYLE_MINI && top < miniTop - resetThresold)) {
+            0
+        } else {
+            destRawY
+        }
+
+        val resetAnimDuration = (abs(fingerY - destTop)/(destRawY * 1.0f)) * 350
+
+        Log.d(TAG, "animateToState top=$top, range[$fingerY,$destTop], duration=$resetAnimDuration,style=$style")
+
+        if(resetAnimDuration < 60){
+            phase2FingerY = 0
+            if(destTop == 0){
+                Log.d(TAG,"animateToState reset STYLE_PORTRAINT_FS")
+                restorePortraitFullscreenMode()
+            } else if(style == STYLE_PORTRAINT_FS || (style == STYLE_MINI && top <destTop && fingerY < destTop && top < miniTop)){
+                Log.d(TAG,"animateToState reset STYLE_MINI")
+                displayAsMiniWindow()
+            } else {
+                Log.d(TAG,"animateToState reset STYLE_GONE")
+                displayAsDisappeared()
+            }
+        } else {
+            floatWindowTop = floatWindow.top
+            Log.d(TAG, "animateToState start floatWindowTop=$floatWindowTop")
+            ValueAnimator.ofInt(fingerY, destTop)
+            .apply {
+                interpolator  = AccelerateInterpolator()
+                setEvaluator(IntEvaluator())
+                duration = resetAnimDuration.toLong()
+                addUpdateListener {
+                    if(it.animatedValue != 0){
+                        draggingFloatWindow(it.animatedValue as Int * 1.0f)
+                    }
+                    if(it.animatedValue == destTop){
+                        floatWindowTop = floatWindow.top
+                        phase2FingerY = 0
+                        if(destTop == 0){
+                            style = STYLE_PORTRAINT_FS
+                        } else if(floatWindowTop == miniTop){
+                            style = STYLE_MINI
+                        } else {
+                            style = STYLE_GONE
+                            displayAsDisappeared()
+                        }
+                        Log.d(TAG, "animateToState style=$style")
+                    }
+                }
+                start()
+            }
+        }
     }
 
-    private fun fadeInOutContent(event: MotionEvent) {
-
+    private fun displayAsMiniWindow(){
+        style = STYLE_MINI
+        floatWindow.layout(miniSideMargin, miniTop, windowRight - miniSideMargin, miniBottom)
+        videoView.layout(0, 0, miniWidth, floatWindow.bottom)
+        contentView.layout(0,0,0,0)
+        contentView.alpha = 0F
     }
-
-    private fun resizeVideoView(event: MotionEvent) {
-
+    private fun displayAsDisappeared(){
+        style = STYLE_GONE
+        floatWindow.visibility = View.GONE
+        floatWindow.layout(0, 0, windowRight, windowBottom - statusBarHeight)
+        videoView.layout(0,0, windowRight, normalHeight)
+        contentView.layout(0, videoView.bottom, windowRight, floatWindow.bottom)
+        contentView.alpha = 1.0F
+    }
+    private fun restorePortraitFullscreenMode(){
+        style = STYLE_PORTRAINT_FS
+        floatWindow.layout(0, 0, windowRight, windowBottom - statusBarHeight)
+        videoView.layout(0,0, windowRight, normalHeight)
+        contentView.layout(0, videoView.bottom, windowRight, floatWindow.bottom)
+        contentView.alpha = 1.0F
+        floatWindow.visibility = View.VISIBLE
+        floatWindow.alpha = 1.0F
     }
 
     var phase2FingerY = 0
 
-    private fun draggingFloatWindow(event: MotionEvent) {
+    private fun draggingFloatWindow(fingerY: Float) {
         // 迷你窗口top等于y轴滑动距离
-        var top = floatWindowTop + (event.rawY - touchDownRawY).toInt()
+        var top = floatWindowTop + (fingerY - touchDownRawY).toInt()
 
         //不能为负，否则滑出顶部边界。
         if (top <= 0) {
             top = 0
         }
+
+        if(style == STYLE_MINI && fingerY >= miniTop){
+            val bottom = top + miniHeight
+            val alpha = 1 - (fignerY - touchDownRawY)/(miniHeight*0.5F)
+            if(alpha >= 0){
+                Log.d(TAG,"phase4 top=$top, bottom=$bottom,alpha = $alpha")
+                floatWindow.alpha = alpha
+                if(alpha <= 0.2F){
+                    floatWindow.visibility = View.GONE
+                } else {
+                    floatWindow.layout(miniSideMargin, top , windowRight - miniSideMargin, bottom)
+                    videoView.layout(0,0,miniWidth,floatWindow.bottom)
+                }
+            }
+            return
+        }
+
         if(top > miniTop){
             top = miniTop
         }
@@ -150,7 +243,7 @@ class MainActivity : AppCompatActivity() {
         //处于滑动第一阶段时， 记录滑道第二阶段时手指Y坐标
         if (style == STYLE_PORTRAINT_FS && top in miniPhase2Top until miniTop && phase2FingerY == 0) {
             Log.i(TAG,"!!! SET phase2FingerY")
-            phase2FingerY = event.rawY.toInt()
+            phase2FingerY = fingerY.toInt()
         }
         //top处于第一阶段和第三阶段的y轴范围时， 清除记录的手指Y坐标
 //        if (phase2FingerY != 0 && (top < miniPhase2Top || top >= miniTop)){
@@ -162,7 +255,7 @@ class MainActivity : AppCompatActivity() {
 //            Log.d(TAG, "top <= miniTop top=$top")
             var bottom: Int = windowBottom  - (top / (miniTop*1.0f) * bottomMargin).toInt() - statusBarHeight
             var sideMargin:Int =  (top / (miniTop*1.0f) * miniSideMargin).toInt()
-//            Log.d(TAG, "top=$top, rawY=${event.rawY},bottom=$bottom")
+//            Log.d(TAG, "top=$top, rawY=${fingerY},bottom=$bottom")
             if (bottom <= miniBottom) {
 //                Log.i(TAG, "bottom <= miniBottom bottom=$bottom")
                 bottom = miniBottom
@@ -174,10 +267,7 @@ class MainActivity : AppCompatActivity() {
 
         //滑动处于第一阶段，即视频宽度还是等于全窗口宽度时，那么视频高度随滑动距离变化
         if(top < miniPhase2Top) {
-//            pauseBtn.layout(0,0,0,0)
-//            closeBtn.layout(0,0,0,0)
 
-//            yDelta += (yDelta * 0.382 * yDelta / yDistance).toInt()
             val y2Distance = (windowBottom - bottomMargin - phase2Height - touchDownY) * 1.0f
             var factor = 0F
             val phase2Bottom = if (top <= 0) {
@@ -202,7 +292,7 @@ class MainActivity : AppCompatActivity() {
             //往下滑时，记录的有到达第二阶段的y值
             if(phase2FingerY != 0) {
 
-                val ydis = event.rawY - phase2FingerY // windowBottom - bottomMargin - miniHeight
+                val ydis = fingerY - phase2FingerY // windowBottom - bottomMargin - miniHeight
 
 //                Log.d(TAG, "phase3 ydis=$ydis, fy=$phase2FingerY, tdy=$touchDownY")
 
@@ -222,7 +312,7 @@ class MainActivity : AppCompatActivity() {
 
         //小窗口状态时往上滑动
         if( style == STYLE_MINI && top > miniPhase2Top){
-            val ydis = event.rawY - touchDownRawY
+            val ydis = fingerY - touchDownRawY
             if(ydis > 0){ //往下滑不动
                 Log.d(TAG,"video r=${videoView.right}, b=${videoView.bottom}")
                 videoView.layout(0, 0, phase3UpRight, miniHeight)

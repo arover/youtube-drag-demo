@@ -56,8 +56,6 @@
             android:layout_alignParentRight="true"
             android:src="@drawable/ic_close_black_32dp"/>
 
-
-
         <LinearLayout
             android:id="@+id/contentView"
             android:layout_width="match_parent"
@@ -82,8 +80,12 @@
 
 
     </RelativeLayout>
-
-
-
+    <View
+        android:id="@+id/pipModeOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black"
+        android:elevation="20dp"
+        android:visibility="gone"/>
 </RelativeLayout>
 

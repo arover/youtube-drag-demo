@@ -1,11 +1,24 @@
 package com.arover.testapplication
 
 import android.animation.IntEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.drawable.Icon
+import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
+import android.util.Rational
 import android.view.MotionEvent
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
@@ -32,8 +45,96 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onUserLeaveHint() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            super.onUserLeaveHint()
+        } else {
+            if ( packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+                    && videoPlaying()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val params = PictureInPictureParams.Builder()
+                        .apply {
+//                            setActions(createActions())
+                            setAspectRatio(Rational(16, 9))
+//                            setSourceRectHint()
+                        }
+                        .build()
+                    Log.d(TAG,"enterPictureInPictureMode() params 16: 9")
+                    enterPictureInPictureMode(params)
+                } else {
+                    Log.d(TAG,"enterPictureInPictureMode() no params")
+                    enterPictureInPictureMode()
+                }
+            }
+        }
+    }
 
+    override fun onPause() {
+        super.onPause()
+        // If called while in PIP mode, do not pause playback
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+            && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            if (isInPictureInPictureMode){
+                pipModeOnPause()
+            } else {
+                normalModeOnPause()
+            }
+        } else {
+            normalModeOnPause()
+        }
+    }
 
+    // Use existing playback logic for paused Activity behavior.
+    private fun normalModeOnPause() {
+
+    }
+
+    private fun pipModeOnPause() {
+        // Continue playback
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean,
+                                               newConfig: Configuration) {
+
+        if (isInPictureInPictureMode) {
+            // Hide the full-screen UI (controls, etc.) while in picture-in-picture mode.
+            contentView.visibility = GONE
+            videoView.layout(0,0,windowRight, floatWindow.bottom)
+        } else {
+            // Restore the full-screen UI.
+            videoView.layout(0,0,windowRight, videoViewNormalHeight)
+            contentView.visibility = VISIBLE
+        }
+    }
+
+    private fun createActions(): MutableList<RemoteAction> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            arrayListOf(
+                RemoteAction(
+                    Icon.createWithResource(
+                        this,
+                        R.drawable.ic_close_black_32dp
+                    ),
+                    "close",
+                    "exit app",
+                    PendingIntent.getActivity(
+                        this,
+                        PI_REQUEST_CODE,
+                        Intent("$packageName.EXIT"),
+                        PendingIntent.FLAG_ONE_SHOT
+                    )
+                )
+            )
+        } else {
+            arrayListOf()
+        }
+    }
+
+    private fun videoPlaying(): Boolean {
+        return style == STYLE_PORTRAIT_FULL_SIZE && floatWindow.visibility == VISIBLE
+    }
+
+    private val PI_REQUEST_CODE: Int = 1001
     private var fingerUpY: Int = 0
     private var resetThreshold: Int = 0
     private var phase3UpRight: Int = 0
@@ -87,7 +188,7 @@ class MainActivity : AppCompatActivity() {
 
         videoView.setOnTouchListener(object : View.OnTouchListener {
             override fun onTouch(v: View, event: MotionEvent): Boolean {
-                Log.v(TAG, "onTouch $event")
+
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     touchDownX = event.x.toInt()
                     touchDownY = event.y.toInt()

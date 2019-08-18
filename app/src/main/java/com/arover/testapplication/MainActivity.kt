@@ -1,7 +1,6 @@
 package com.arover.testapplication
 
 import android.animation.IntEvaluator
-import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
@@ -12,7 +11,6 @@ import android.content.res.Configuration
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.util.Log
 import android.util.Rational
 import android.view.MotionEvent
@@ -332,20 +330,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun draggingFloatWindow(fingerY: Float) {
         // 迷你窗口top等于y轴滑动距离
-        var top = floatWindowTop + (fingerY - touchDownRawY).toInt()
+        var y = floatWindowTop + (fingerY - touchDownRawY).toInt()
 
         //不能为负，否则滑出顶部边界。
-        if (top <= 0) {
-            top = 0
+        if (y <= 0) {
+            y = 0
         }
 
-        if(style == STYLE_PORTRAIT_FULL_SIZE && top > miniTop){
-            top = miniTop
+        if(style == STYLE_PORTRAIT_FULL_SIZE && y > miniTop){
+            y = miniTop
         }
 
-        Log.i(TAG,"top=$top") //,miniTop=$miniTop,miniPhase2Top=$miniPhase2Top")
+        Log.i(TAG,"top=$y") //,miniTop=$miniTop,miniPhase2Top=$miniPhase2Top")
         //处于滑动第一阶段时， 记录滑道第二阶段时手指Y坐标
-        if (style == STYLE_PORTRAIT_FULL_SIZE && top in miniPhase2Top until miniTop && phase2FingerY == 0) {
+        if (style == STYLE_PORTRAIT_FULL_SIZE && y in miniPhase2Top until miniTop && phase2FingerY == 0) {
             Log.i(TAG,"!!! SET phase2FingerY")
             phase2FingerY = fingerY.toInt()
         }
@@ -355,29 +353,29 @@ class MainActivity : AppCompatActivity() {
 //            phase2FingerY = 0
 //        }
         //floatwindow 滑动范围以top来定为(1，miniTop)
-        if (top in 0..miniTop) {
+        if (y in 0..miniTop) {
 //            Log.d(TAG, "top <= miniTop top=$top")
-            var bottom: Int = windowBottom  - (top / (miniTop*1.0f) * bottomMargin).toInt() - statusBarHeight
-            var sideMargin:Int =  (top / (miniTop*1.0f) * miniSideMargin).toInt()
+            var bottom: Int = windowBottom  - (y / (miniTop*1.0f) * bottomMargin).toInt() - statusBarHeight
+            var sideMargin:Int =  (y / (miniTop*1.0f) * miniSideMargin).toInt()
 //            Log.d(TAG, "top=$top, rawY=${fingerY},bottom=$bottom")
             if (bottom <= miniBottom) {
 //                Log.i(TAG, "bottom <= miniBottom bottom=$bottom")
                 bottom = miniBottom
             }
             val right = windowRight - sideMargin
-            Log.d(TAG, "phase1 top=$top, right=$right, bottom=$bottom")
-            floatWindow.layout(sideMargin, top, right, bottom)
+            Log.d(TAG, "phase1 top=$y, right=$right, bottom=$bottom")
+            floatWindow.layout(sideMargin, y, right, bottom)
         }
 
         //滑动处于第一阶段，即视频宽度还是等于全窗口宽度时，那么视频高度随滑动距离变化
-        if(top < miniPhase2Top) {
+        if(y < miniPhase2Top) {
 
             val y2Distance = (windowBottom - bottomMargin - phase2Height - touchDownY) * 1.0f
             var factor = 0F
-            val phase2Bottom = if (top <= 0) {
+            val phase2Bottom = if (y <= 0) {
                 videoViewNormalHeight
             } else {
-                factor = top / y2Distance
+                factor = y / y2Distance
                 videoViewNormalHeight - (factor * (videoViewNormalHeight - phase2Height)).toInt()
 
             }
@@ -392,7 +390,7 @@ class MainActivity : AppCompatActivity() {
             contentView.alpha = alpha
         }
         // 滑动处于第二阶段，即top在阶段二和最终阶段的范围内，那么视频高度和宽度都随滑动距离变化
-        if (top in miniPhase2Top..miniTop) {
+        if (y in miniPhase2Top..miniTop) {
             //往下滑时，记录的有到达第二阶段的y值
             if(phase2FingerY != 0) {
 
@@ -415,7 +413,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         //小窗口状态时往上滑动
-        if( style == STYLE_MINI && top > miniPhase2Top && top <= miniTop){
+        if( style == STYLE_MINI && y > miniPhase2Top && y <= miniTop){
             val ydis = fingerY - touchDownRawY
             if(ydis > 0){ //往下滑不动
                 Log.d(TAG,"video r=${videoView.right}, b=${videoView.bottom}")
@@ -438,18 +436,18 @@ class MainActivity : AppCompatActivity() {
 
             //fadeout down 下滑渐隐
         } else if(style == STYLE_MINI
-                && top >= miniTop // 往下滑
-                && top < miniTop + miniHeight * FADE_HEIGHT_FACTOR) { //未超过最大Y值
-            val bottom = top + miniHeight
+                && y >= miniTop // 往下滑
+                && y < miniTop + miniHeight * FADE_HEIGHT_FACTOR) { //未超过最大Y值
+            val bottom = y + miniHeight
             val alpha = 1 - (fingerY - touchDownRawY) / (miniHeight * FADE_HEIGHT_FACTOR)
             if (alpha >= 0) {
-                Log.d(TAG, "phase4 top=$top, bottom=$bottom,alpha = $alpha")
+                Log.d(TAG, "phase4 top=$y, bottom=$bottom,alpha = $alpha")
                 floatWindow.alpha = alpha
                 if (alpha <= 0.2F) {
                     floatWindow.visibility = View.GONE
                 } else {
-                    floatWindow.layout(miniSideMargin, top, windowRight - miniSideMargin, bottom)
-                    if (top > miniTop)
+                    floatWindow.layout(miniSideMargin, y, windowRight - miniSideMargin, bottom)
+                    if (y > miniTop)
                         videoView.layout(0, 0, miniWidth, floatWindow.bottom)
                 }
             }
